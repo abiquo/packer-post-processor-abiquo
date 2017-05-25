@@ -28,10 +28,10 @@ type DTO struct {
 }
 
 type Link struct {
-	Type  string
-	Href  string
-	Title string
-	Rel   string
+	Type  string `json:"type,omitempty"`
+	Href  string `json:"href,omitempty"`
+	Title string `json:"title,omitempty"`
+	Rel   string `json:"rel,omitempty"`
 }
 
 type Enterprise struct {
@@ -322,6 +322,38 @@ func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskD
 	return newTemplate, err
 }
 
+func (t *VirtualMachineTemplate) Update(config Config) error {
+	template_json, err := t.ToJson()
+	if err != nil {
+		return err
+	}
+	log.Printf("Template json is : %s", string(template_json))
+
+	templateUrl := t.GetLink("edit").Href
+	templateType := t.GetLink("edit").Type
+
+	// Enable debug mode
+	resty.SetDebug(true)
+
+	// Using you custom log writer
+	logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	resty.SetLogger(logFile)
+
+	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	resp, err := resty.R().
+		SetBasicAuth(config.ApiUsername, config.ApiPassword).
+		SetHeader("Accept", templateType).
+		SetHeader("Content-Type", templateType).
+		SetBody(string(template_json)).
+		Put(templateUrl)
+	if err != nil {
+		return err
+	}
+
+	json.Unmarshal(resp.Body(), &t)
+	return nil
+}
+
 type AbstractCollection struct {
 	Links     []Link
 	TotalSize int
@@ -367,6 +399,14 @@ type Config struct {
 	LoginUser          string `mapstructure:"login_user"`
 	LoginPassword      string `mapstructure:"login_password"`
 	EthernetDriverType string `mapstructure:"eth_driver"`
+
+	ChefEnabled                      bool   `mapstructure:"chef_enabled"`
+	IconUrl                          string `mapstructure:"icon_url"`
+	EnableCpuHotAdd                  bool   `mapstructure:"cpu_hotadd"`
+	EnableRamHotAdd                  bool   `mapstructure:"ram_hotadd"`
+	EnableDisksHotReconfigure        bool   `mapstructure:"disk_hotadd"`
+	EnableNicsHotReconfigure         bool   `mapstructure:"nic_hotadd"`
+	EnableRemoteAccessHotReconfigure bool   `mapstructure:"vnc_hotadd"`
 
 	SshUser     string
 	SshPass     string
@@ -486,14 +526,11 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 		}
 		diskdef.RequiredHDInMB = size
 		diskdef.DiskFileFormat = abqdiskformat
-		templateUploaded, err := template.ReplacePrimaryDisk(p.config, diskdef, artifact)
+		template, err := template.ReplacePrimaryDisk(p.config, diskdef, artifact)
 		if err != nil {
 			return artifact, p.config.KeepInputArtifact, err
 		}
-		ui.Say("Upload complete. The URL of the updated template is " + templateUploaded.GetLink("edit").Href)
-
-		newArtifact := &Artifact{Url: templateUploaded.GetLink("edit").Href}
-		return newArtifact, false, nil
+		ui.Say("Upload complete. The URL of the updated template is " + template.GetLink("edit").Href)
 	} else {
 		ui.Say("Uploading template...")
 		templatedef := p.config.BuildTemplateDef()
@@ -510,10 +547,21 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 			log.Printf("Found new template '%s'", template.Name)
 		}
 		ui.Say("Upload complete. The URL of the new template is " + template.GetLink("edit").Href)
-
-		newArtifact := &Artifact{Url: template.GetLink("edit").Href}
-		return newArtifact, false, nil
 	}
+
+	ui.Say("Updating template with extra attributes...")
+
+	template.ChefEnabled = p.config.ChefEnabled
+	template.IconUrl = p.config.IconUrl
+	template.EnableCpuHotAdd = p.config.EnableCpuHotAdd
+	template.EnableRamHotAdd = p.config.EnableRamHotAdd
+	template.EnableDisksHotReconfigure = p.config.EnableDisksHotReconfigure
+	template.EnableNicsHotReconfigure = p.config.EnableNicsHotReconfigure
+	template.EnableRemoteAccessHotReconfigure = p.config.EnableRemoteAccessHotReconfigure
+	template.Update(p.config)
+
+	newArtifact := &Artifact{Url: template.GetLink("edit").Href}
+	return newArtifact, false, nil
 }
 
 func (config *Config) FindRepoUrl() (Repo, error) {
