@@ -7,7 +7,7 @@ A packer postprocessor that will allow you to upload the templates to Abiquo.
 Having your Go environment ready, run:
 
 ```
-go get github.com/chirauki/packer-postprocessor-abiquo
+go get github.com/abiquo/packer-postprocessor-abiquo
 ```
 
 See [packer docs](https://www.packer.io/docs/extending/plugins.html) on how to install the plugin.
