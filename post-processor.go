@@ -176,12 +176,14 @@ func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (V
 		return VirtualMachineTemplate{}, err
 	}
 
-	// Enable debug mode
-	resty.SetDebug(true)
+	if os.Getenv("RESTYDEBUG") != "" {
+		// Enable debug mode
+		resty.SetDebug(true)
 
-	// Using you custom log writer
-	logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	resty.SetLogger(logFile)
+		// Using you custom log writer
+		logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		resty.SetLogger(logFile)
+	}
 
 	location := resp.Header()["Location"][0]
 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
@@ -291,12 +293,14 @@ func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskD
 
 	templateUpdateUrl := t.GetLink("templatePath").Href
 
-	// Enable debug mode
-	resty.SetDebug(true)
+	if os.Getenv("RESTYDEBUG") != "" {
+		// Enable debug mode
+		resty.SetDebug(true)
 
-	// Using you custom log writer
-	logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	resty.SetLogger(logFile)
+		// Using you custom log writer
+		logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		resty.SetLogger(logFile)
+	}
 
 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	resp, err := resty.R().
@@ -332,12 +336,14 @@ func (t *VirtualMachineTemplate) Update(config Config) error {
 	templateUrl := t.GetLink("edit").Href
 	templateType := t.GetLink("edit").Type
 
-	// Enable debug mode
-	resty.SetDebug(true)
+	if os.Getenv("RESTYDEBUG") != "" {
+		// Enable debug mode
+		resty.SetDebug(true)
 
-	// Using you custom log writer
-	logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	resty.SetLogger(logFile)
+		// Using you custom log writer
+		logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		resty.SetLogger(logFile)
+	}
 
 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	resp, err := resty.R().
