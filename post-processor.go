@@ -173,6 +173,8 @@ func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (V
 		}).
 		Post(post_url)
 	if err != nil {
+		log.Printf("Response code is: %d", resp.StatusCode())
+		log.Printf("Response is: %s", string(resp.Body()))
 		return VirtualMachineTemplate{}, err
 	}
 
@@ -311,6 +313,8 @@ func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskD
 		}).
 		Post(templateUpdateUrl)
 	if err != nil {
+		log.Printf("Response code is: %d", resp.StatusCode())
+		log.Printf("Response is: %s", string(resp.Body()))
 		return newTemplate, err
 	}
 
