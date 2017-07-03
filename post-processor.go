@@ -165,7 +165,7 @@ func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (V
 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	resp, err := resty.R().
 		SetBasicAuth(config.ApiUsername, config.ApiPassword).
-		SetFileReader("diskFile", filepath.Base(file), bufio.NewReader(f)).
+		SetFileReader("diskFile", filepath.Base(file), f).
 		SetFormData(map[string]string{
 			"diskInfo": string(definition_json),
 		}).
@@ -305,7 +305,7 @@ func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskD
 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	resp, err := resty.R().
 		SetBasicAuth(config.ApiUsername, config.ApiPassword).
-		SetFileReader("diskFile", filepath.Base(file), bufio.NewReader(f)).
+		SetFileReader("diskFile", filepath.Base(file), f).
 		SetFormData(map[string]string{
 			"diskInfo": string(diskdef_json),
 		}).
