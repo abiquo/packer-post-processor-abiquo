@@ -2,13 +2,11 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"gopkg.in/resty.v0"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -152,7 +150,6 @@ func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (V
 	if err != nil {
 		return VirtualMachineTemplate{}, err
 	}
-	fileBytes, _ := ioutil.ReadFile(file)
 
 	post_url := ""
 	for _, link := range repo.Links {
@@ -164,10 +161,11 @@ func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (V
 		return VirtualMachineTemplate{}, errors.New("Could not find AM repo URI.")
 	}
 
+	f, err := os.Open(file)
 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	resp, err := resty.R().
 		SetBasicAuth(config.ApiUsername, config.ApiPassword).
-		SetFileReader("diskFile", filepath.Base(file), bytes.NewReader(fileBytes)).
+		SetFileReader("diskFile", filepath.Base(file), bufio.NewReader(f)).
 		SetFormData(map[string]string{
 			"diskInfo": string(definition_json),
 		}).
@@ -291,7 +289,6 @@ func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskD
 	if err != nil {
 		return newTemplate, err
 	}
-	fileBytes, _ := ioutil.ReadFile(file)
 
 	templateUpdateUrl := t.GetLink("templatePath").Href
 
@@ -304,10 +301,11 @@ func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskD
 		resty.SetLogger(logFile)
 	}
 
+	f, err := os.Open(file)
 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	resp, err := resty.R().
 		SetBasicAuth(config.ApiUsername, config.ApiPassword).
-		SetFileReader("diskFile", filepath.Base(file), bytes.NewReader(fileBytes)).
+		SetFileReader("diskFile", filepath.Base(file), bufio.NewReader(f)).
 		SetFormData(map[string]string{
 			"diskInfo": string(diskdef_json),
 		}).
