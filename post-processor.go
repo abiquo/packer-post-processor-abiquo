@@ -10,7 +10,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -161,11 +160,12 @@ func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (V
 		return VirtualMachineTemplate{}, errors.New("Could not find AM repo URI.")
 	}
 
-	f, err := os.Open(file)
+	// f, err := os.Open(file)
 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	resp, err := resty.R().
 		SetBasicAuth(config.ApiUsername, config.ApiPassword).
-		SetFileReader("diskFile", filepath.Base(file), f).
+		// SetFileReader("diskFile", filepath.Base(file), f).
+		SetFile("diskFile", file).
 		SetFormData(map[string]string{
 			"diskInfo": string(definition_json),
 		}).
@@ -301,11 +301,12 @@ func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskD
 		resty.SetLogger(logFile)
 	}
 
-	f, err := os.Open(file)
+	// f, err := os.Open(file)
 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	resp, err := resty.R().
 		SetBasicAuth(config.ApiUsername, config.ApiPassword).
-		SetFileReader("diskFile", filepath.Base(file), f).
+		// SetFileReader("diskFile", filepath.Base(file), f).
+		SetFile("diskFile", file).
 		SetFormData(map[string]string{
 			"diskInfo": string(diskdef_json),
 		}).
