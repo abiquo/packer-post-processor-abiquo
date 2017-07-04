@@ -175,6 +175,7 @@ func newfileUploadRequest(uri string, params map[string]string, paramName, path 
 }
 
 func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (VirtualMachineTemplate, error) {
+	var newTemplate VirtualMachineTemplate
 	log.Printf("Template def is : %v", def)
 	definition_json, err := def.ToJson()
 	if err != nil {
@@ -222,7 +223,7 @@ func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (V
 	// }
 
 	params := map[string]string{
-		"diskInfo": string(diskdef_json),
+		"diskInfo": string(definition_json),
 	}
 	request, err := newfileUploadRequest(post_url, params, "diskFile", file)
 	request.SetBasicAuth(config.ApiUsername, config.ApiPassword)
@@ -235,24 +236,28 @@ func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (V
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	resp, err = client.Do(request)
+	resp, err := client.Do(request)
 	if err != nil {
 		log.Printf("ERROR uploading file!", err)
 		return newTemplate, err
 	}
 
-	location := resp.Location()
-	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	rclient := resty.R().SetBasicAuth(config.ApiUsername, config.ApiPassword)
-	resp, err = rclient.
-		SetHeader("Accept", "application/vnd.abiquo.virtualmachinetemplate+json").
-		Get(location)
+	location, err := resp.Location()
 	if err != nil {
-		return VirtualMachineTemplate{}, err
+		log.Printf("Upload response did not had a location header!")
+		return newTemplate, err
 	}
 
-	var newTemplate VirtualMachineTemplate
-	json.Unmarshal(resp.Body(), &newTemplate)
+	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	rclient := resty.R().SetBasicAuth(config.ApiUsername, config.ApiPassword)
+	respt, err := rclient.
+		SetHeader("Accept", "application/vnd.abiquo.virtualmachinetemplate+json").
+		Get(location.String())
+	if err != nil {
+		return newTemplate, err
+	}
+
+	json.Unmarshal(respt.Body(), &newTemplate)
 	return newTemplate, err
 }
 
