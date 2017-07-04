@@ -2,12 +2,16 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"gopkg.in/resty.v0"
+	"io"
 	"log"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
@@ -137,6 +141,39 @@ func (def *VMTDef) ToJson() ([]byte, error) {
 	return str, err
 }
 
+// https://gist.github.com/mattetti/5914158/f4d1393d83ebedc682a3c8e7bdc6b49670083b84
+// Creates a new file upload http request with optional extra params
+func newfileUploadRequest(uri string, params map[string]string, paramName, path string) (*http.Request, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	fi, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+
+	body := new(bytes.Buffer)
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile(paramName, fi.Name())
+	if err != nil {
+		return nil, err
+	}
+	io.Copy(part, file)
+
+	for key, val := range params {
+		_ = writer.WriteField(key, val)
+	}
+	err = writer.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return http.NewRequest("POST", uri, body)
+}
+
 func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (VirtualMachineTemplate, error) {
 	log.Printf("Template def is : %v", def)
 	definition_json, err := def.ToJson()
@@ -160,32 +197,51 @@ func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (V
 		return VirtualMachineTemplate{}, errors.New("Could not find AM repo URI.")
 	}
 
-	// f, err := os.Open(file)
-	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	resp, err := resty.R().
-		SetBasicAuth(config.ApiUsername, config.ApiPassword).
-		// SetFileReader("diskFile", filepath.Base(file), f).
-		SetFile("diskFile", file).
-		SetFormData(map[string]string{
-			"diskInfo": string(definition_json),
-		}).
-		Post(post_url)
+	// if os.Getenv("RESTYDEBUG") != "" {
+	// 	// Enable debug mode
+	// 	resty.SetDebug(true)
+
+	// 	// Using you custom log writer
+	// 	logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	// 	resty.SetLogger(logFile)
+	// }
+
+	// resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	// resp, err := resty.R().
+	// 	SetBasicAuth(config.ApiUsername, config.ApiPassword).
+	// 	// SetFileReader("diskFile", filepath.Base(file), f).
+	// 	SetFile("diskFile", file).
+	// 	SetFormData(map[string]string{
+	// 		"diskInfo": string(definition_json),
+	// 	}).
+	// 	Post(post_url)
+	// if err != nil {
+	// 	log.Printf("Response code is: %d", resp.StatusCode())
+	// 	log.Printf("Response is: %s", string(resp.Body()))
+	// 	return VirtualMachineTemplate{}, err
+	// }
+
+	params := map[string]string{
+		"diskInfo": string(diskdef_json),
+	}
+	request, err := newfileUploadRequest(post_url, params, "diskFile", file)
+	request.SetBasicAuth(config.ApiUsername, config.ApiPassword)
 	if err != nil {
-		log.Printf("Response code is: %d", resp.StatusCode())
-		log.Printf("Response is: %s", string(resp.Body()))
-		return VirtualMachineTemplate{}, err
+		log.Printf("ERROR ON UPLOAD!", err)
+		return newTemplate, err
 	}
 
-	if os.Getenv("RESTYDEBUG") != "" {
-		// Enable debug mode
-		resty.SetDebug(true)
-
-		// Using you custom log writer
-		logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-		resty.SetLogger(logFile)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err = client.Do(request)
+	if err != nil {
+		log.Printf("ERROR uploading file!", err)
+		return newTemplate, err
 	}
 
-	location := resp.Header()["Location"][0]
+	location := resp.Location()
 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	rclient := resty.R().SetBasicAuth(config.ApiUsername, config.ApiPassword)
 	resp, err = rclient.
@@ -292,40 +348,59 @@ func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskD
 
 	templateUpdateUrl := t.GetLink("templatePath").Href
 
-	if os.Getenv("RESTYDEBUG") != "" {
-		// Enable debug mode
-		resty.SetDebug(true)
+	// if os.Getenv("RESTYDEBUG") != "" {
+	// 	// Enable debug mode
+	// 	resty.SetDebug(true)
 
-		// Using you custom log writer
-		logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-		resty.SetLogger(logFile)
+	// 	// Using you custom log writer
+	// 	logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	// 	resty.SetLogger(logFile)
+	// }
+
+	// // f, err := os.Open(file)
+	// resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	// resp, err := resty.R().
+	// 	SetBasicAuth(config.ApiUsername, config.ApiPassword).
+	// 	// SetFileReader("diskFile", filepath.Base(file), f).
+	// 	SetFile("diskFile", file).
+	// 	SetFormData(map[string]string{
+	// 		"diskInfo": string(diskdef_json),
+	// 	}).
+	// 	Post(templateUpdateUrl)
+	// if err != nil {
+	// 	log.Printf("Response code is: %d", resp.StatusCode())
+	// 	log.Printf("Response is: %s", string(resp.Body()))
+	// 	return newTemplate, err
+	// }
+	params := map[string]string{
+		"diskInfo": string(diskdef_json),
+	}
+	request, err := newfileUploadRequest(templateUpdateUrl, params, "diskFile", file)
+	request.SetBasicAuth(config.ApiUsername, config.ApiPassword)
+	if err != nil {
+		log.Printf("ERROR ON UPLOAD!", err)
+		return newTemplate, err
 	}
 
-	// f, err := os.Open(file)
-	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	resp, err := resty.R().
-		SetBasicAuth(config.ApiUsername, config.ApiPassword).
-		// SetFileReader("diskFile", filepath.Base(file), f).
-		SetFile("diskFile", file).
-		SetFormData(map[string]string{
-			"diskInfo": string(diskdef_json),
-		}).
-		Post(templateUpdateUrl)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	_, err = client.Do(request)
 	if err != nil {
-		log.Printf("Response code is: %d", resp.StatusCode())
-		log.Printf("Response is: %s", string(resp.Body()))
+		log.Printf("ERROR uploading file!", err)
 		return newTemplate, err
 	}
 
 	rclient := resty.R().SetBasicAuth(config.ApiUsername, config.ApiPassword)
-	resp, err = rclient.
+	respt, err := rclient.
 		SetHeader("Accept", t.GetLink("edit").Type).
 		Get(t.GetLink("edit").Href)
 	if err != nil {
 		return newTemplate, err
 	}
 
-	json.Unmarshal(resp.Body(), &newTemplate)
+	json.Unmarshal(respt.Body(), &newTemplate)
 	return newTemplate, err
 }
 
