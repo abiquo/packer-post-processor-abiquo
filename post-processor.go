@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	vmwcommon "github.com/hashicorp/packer/builder/vmware/common"
 	"github.com/hashicorp/packer/common"
@@ -198,30 +199,6 @@ func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (V
 		return VirtualMachineTemplate{}, errors.New("Could not find AM repo URI.")
 	}
 
-	// if os.Getenv("RESTYDEBUG") != "" {
-	// 	// Enable debug mode
-	// 	resty.SetDebug(true)
-
-	// 	// Using you custom log writer
-	// 	logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	// 	resty.SetLogger(logFile)
-	// }
-
-	// resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	// resp, err := resty.R().
-	// 	SetBasicAuth(config.ApiUsername, config.ApiPassword).
-	// 	// SetFileReader("diskFile", filepath.Base(file), f).
-	// 	SetFile("diskFile", file).
-	// 	SetFormData(map[string]string{
-	// 		"diskInfo": string(definition_json),
-	// 	}).
-	// 	Post(post_url)
-	// if err != nil {
-	// 	log.Printf("Response code is: %d", resp.StatusCode())
-	// 	log.Printf("Response is: %s", string(resp.Body()))
-	// 	return VirtualMachineTemplate{}, err
-	// }
-
 	params := map[string]string{
 		"diskInfo": string(definition_json),
 	}
@@ -235,7 +212,10 @@ func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (V
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
-	client := &http.Client{Transport: tr}
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   time.Duration(7200 * time.Second),
+	}
 	resp, err := client.Do(request)
 	if err != nil {
 		log.Printf("ERROR uploading file!", err)
@@ -353,30 +333,6 @@ func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskD
 
 	templateUpdateUrl := t.GetLink("templatePath").Href
 
-	// if os.Getenv("RESTYDEBUG") != "" {
-	// 	// Enable debug mode
-	// 	resty.SetDebug(true)
-
-	// 	// Using you custom log writer
-	// 	logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	// 	resty.SetLogger(logFile)
-	// }
-
-	// // f, err := os.Open(file)
-	// resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	// resp, err := resty.R().
-	// 	SetBasicAuth(config.ApiUsername, config.ApiPassword).
-	// 	// SetFileReader("diskFile", filepath.Base(file), f).
-	// 	SetFile("diskFile", file).
-	// 	SetFormData(map[string]string{
-	// 		"diskInfo": string(diskdef_json),
-	// 	}).
-	// 	Post(templateUpdateUrl)
-	// if err != nil {
-	// 	log.Printf("Response code is: %d", resp.StatusCode())
-	// 	log.Printf("Response is: %s", string(resp.Body()))
-	// 	return newTemplate, err
-	// }
 	params := map[string]string{
 		"diskInfo": string(diskdef_json),
 	}
@@ -390,7 +346,10 @@ func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskD
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
-	client := &http.Client{Transport: tr}
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   time.Duration(7200 * time.Second),
+	}
 	_, err = client.Do(request)
 	if err != nil {
 		log.Printf("ERROR uploading file!", err)
