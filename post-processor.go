@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"gopkg.in/resty.v0"
 	"io"
+	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -225,6 +226,11 @@ func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (V
 	location, err := resp.Location()
 	if err != nil {
 		log.Printf("Upload response did not had a location header!")
+		log.Printf("Response code was : %d", resp.StatusCode)
+		defer resp.Body.Close()
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		bodyString := string(bodyBytes)
+		log.Printf("Body was : %s", bodyString)
 		return newTemplate, err
 	}
 
