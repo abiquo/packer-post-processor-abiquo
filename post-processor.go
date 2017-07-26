@@ -173,7 +173,9 @@ func newfileUploadRequest(uri string, params map[string]string, paramName, path 
 		return nil, err
 	}
 
-	return http.NewRequest("POST", uri, body)
+	request, err := http.NewRequest("POST", uri, body)
+	request.Header.Add("Content-Type", writer.FormDataContentType())
+	return request, err
 }
 
 func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (VirtualMachineTemplate, error) {
