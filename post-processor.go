@@ -608,6 +608,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	ui.Say("Updating template with extra attributes...")
 
 	template.ChefEnabled = p.config.ChefEnabled
+	template.Description = p.config.Description
 	template.IconUrl = p.config.IconUrl
 	template.EnableCpuHotAdd = p.config.EnableCpuHotAdd
 	template.EnableRamHotAdd = p.config.EnableRamHotAdd
