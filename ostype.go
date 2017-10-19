@@ -8,247 +8,285 @@ type OsType struct {
 func OsTypeFromGuest(os_type string) OsType {
 	var os OsType
 	switch os_type {
-	case "darwin14_64Guest":
+	// version 6.5
+	case "centos6-64":
+		os = OsType{Os: "CENTOS_64", Version: "6"}
+	case "centos7-64":
+		os = OsType{Os: "CENTOS_64", Version: "7"}
+	case "centos6":
+		os = OsType{Os: "CENTOS", Version: "6"}
+	case "centos7":
+		os = OsType{Os: "CENTOS", Version: "7"}
+	case "darwin15-64":
+		os = OsType{Os: "MACOS", Version: "15"}
+	case "darwin16-64":
+		os = OsType{Os: "MACOS", Version: "16"}
+	case "debian10-64":
+		os = OsType{Os: "DEBIAN_64", Version: "10"}
+	case "debian10":
+		os = OsType{Os: "DEBIAN", Version: "10"}
+	case "debian9-64":
+		os = OsType{Os: "DEBIAN_64", Version: "9"}
+	case "debian9":
+		os = OsType{Os: "DEBIAN", Version: "9"}
+	case "oraclelinux6-64":
+		os = OsType{Os: "ORACLE_ENTERPRISE_LINUX_64", Version: "6"}
+	case "oraclelinux6":
+		os = OsType{Os: "ORACLE_ENTERPRISE_LINUX", Version: "6"}
+	case "oraclelinux7-64":
+		os = OsType{Os: "ORACLE_ENTERPRISE_LINUX_64", Version: "7"}
+	case "oraclelinux7":
+		os = OsType{Os: "ORACLE_ENTERPRISE_LINUX", Version: "7"}
+	case "vmkernel65":
+		os = OsType{Os: "ESXI", Version: "6.5"}
+	case "vmware-photon-64":
+		os = OsType{Os: "ESXI", Version: "photon"}
+	// version 6
+	case "darwin14-64":
 		os = OsType{Os: "MACOS", Version: "14 64b"}
-	case "debian8_64Guest":
+	case "debian8-64":
 		os = OsType{Os: "DEBIAN", Version: "8 64b"}
 	case "debian8":
 		os = OsType{Os: "DEBIAN", Version: "8"}
-	case "vmkernel6Guest":
+	case "vmkernel6":
 		os = OsType{Os: "ESXI", Version: "6"}
-	case "coreos64Guest":
+	case "coreos-64":
 		os = OsType{Os: "LINUX", Version: "coreos"}
-	case "windows9Server64Guest":
-		os = OsType{Os: "WINDOWS", Version: "10 Server"}
-	case "windows9_64Guest":
+	case "windows9srv-64":
+		os = OsType{Os: "WINDOWS", Version: "Server 2016"}
+	case "windows9-64":
 		os = OsType{Os: "WINDOWS", Version: "10 64b"}
 	case "windows9":
 		os = OsType{Os: "WINDOWS", Version: "10"}
-	case "darwin12_64Guest":
+	// version 55
+	case "darwin12-64":
 		os = OsType{Os: "MACOS", Version: "12"}
-	case "darwin13_64Guest":
+	case "darwin13-64":
 		os = OsType{Os: "MACOS", Version: "13"}
-	case "debian7_64Guest":
+	case "debian7-64":
 		os = OsType{Os: "DEBIAN", Version: "7 64b"}
 	case "debian7":
 		os = OsType{Os: "DEBIAN", Version: "7"}
 	case "genericLinuxGuest":
 		os = OsType{Os: "LINUX", Version: "generic"}
-	case "other3xLinux64Guest":
+	case "other3xlinux-64":
 		os = OsType{Os: "LINUX", Version: "3x 64b"}
-	case "other3xLinux":
+	case "other3xlinux":
 		os = OsType{Os: "LINUX", Version: "3x"}
-	case "rhel7_64Guest":
+	case "rhel7-64":
 		os = OsType{Os: "RHEL", Version: "7 64b"}
 	case "rhel7":
 		os = OsType{Os: "RHEL", Version: "7"}
-	case "sles12_64Guest":
+	case "sles12-64":
 		os = OsType{Os: "SLES", Version: "12 64b"}
 	case "sles12":
 		os = OsType{Os: "SLES", Version: "12"}
-	case "windowsHyperVGuest":
+	case "winhyperv":
 		os = OsType{Os: "WINDOWS", Version: "hyperv"}
-	case "darwinGuest":
+	// 51
+	case "darwin":
 		os = OsType{Os: "MACOS", Version: ""}
-	case "darwin64Guest":
+	case "darwin-64":
 		os = OsType{Os: "MACOS", Version: "64b"}
-	case "darwin10_64Guest":
+	case "darwin10-64":
 		os = OsType{Os: "MACOS", Version: "10 64b"}
-	case "darwin10Guest":
+	case "darwin10":
 		os = OsType{Os: "MACOS", Version: "10"}
-	case "darwin11_64Guest":
+	case "darwin11-64":
 		os = OsType{Os: "MACOS", Version: "11 64b"}
-	case "darwin11Guest":
+	case "darwin11":
 		os = OsType{Os: "MACOS", Version: "11"}
-	case "solaris6Guest":
+	case "solaris6":
 		os = OsType{Os: "SOLARIS", Version: "6"}
-	case "solaris7Guest":
+	case "solaris7":
 		os = OsType{Os: "SOLARIS", Version: "7"}
-	case "solaris8Guest":
+	case "solaris8":
 		os = OsType{Os: "SOLARIS", Version: "8"}
-	case "solaris9Guest":
+	case "solaris9":
 		os = OsType{Os: "SOLARIS", Version: "9"}
-	case "solaris10Guest":
+	case "solaris10":
 		os = OsType{Os: "SOLARIS", Version: "10"}
-	case "sjdsGuest":
+	case "sjds":
 		os = OsType{Os: "SOLARIS", Version: "Sun Java Desktop System"}
-	case "solaris11_64Guest":
+	case "solaris11-64":
 		os = OsType{Os: "SOLARIS_64", Version: "11"}
-	case "solaris10_64Guest":
+	case "solaris10-64":
 		os = OsType{Os: "SOLARIS_64", Version: "10"}
-	case "redhatGuest":
+	case "redhat":
 		os = OsType{Os: "RHEL", Version: ""}
-	case "rhel2Guest":
+	case "rhel2":
 		os = OsType{Os: "RHEL", Version: "2"}
-	case "rhel3Guest":
+	case "rhel3":
 		os = OsType{Os: "RHEL", Version: "3"}
-	case "rhel4Guest":
+	case "rhel4":
 		os = OsType{Os: "RHEL", Version: "4"}
-	case "rhel5Guest":
+	case "rhel5":
 		os = OsType{Os: "RHEL", Version: "5"}
-	case "rhel6Guest":
+	case "rhel6":
 		os = OsType{Os: "RHEL", Version: "6"}
-	case "rhel3_64Guest":
+	case "rhel3-64":
 		os = OsType{Os: "RHEL_64", Version: "3"}
-	case "rhel4_64Guest":
+	case "rhel4-64":
 		os = OsType{Os: "RHEL_64", Version: "4"}
-	case "rhel5_64Guest":
+	case "rhel5-64":
 		os = OsType{Os: "RHEL_64", Version: "5"}
-	case "rhel6_64Guest":
+	case "rhel6-64":
 		os = OsType{Os: "RHEL_64", Version: "6"}
-	case "suseGuest":
+	case "suse":
 		os = OsType{Os: "SUSE", Version: ""}
-	case "opensuseGuest":
+	case "opensuse":
 		os = OsType{Os: "SUSE", Version: "Open"}
-	case "suse64Guest":
+	case "suse64":
 		os = OsType{Os: "SUSE_64", Version: ""}
-	case "opensuse64Guest":
+	case "opensuse64":
 		os = OsType{Os: "SUSE_64", Version: "Open"}
-	case "slesGuest":
+	case "sles":
 		os = OsType{Os: "SLES", Version: ""}
-	case "sles10Guest":
+	case "sles10":
 		os = OsType{Os: "SLES", Version: "10"}
-	case "sles11Guest":
+	case "sles11":
 		os = OsType{Os: "SLES", Version: "11"}
-	case "sles10_64Guest":
+	case "sles10-64":
 		os = OsType{Os: "SLES_64", Version: "10"}
-	case "sles11_64Guest":
+	case "sles11-64":
 		os = OsType{Os: "SLES_64", Version: "11"}
-	case "sles64Guest":
+	case "sles-64":
 		os = OsType{Os: "SLES_64", Version: ""}
-	case "oesGuest":
+	case "oes":
 		os = OsType{Os: "NOVELL_OES", Version: ""}
-	case "nld9Guest":
+	case "nld9":
 		os = OsType{Os: "NOVELL_OES", Version: "9"}
-	case "netware4Guest":
+	case "netware4":
 		os = OsType{Os: "NOVELL_OES", Version: "NetWare 4"}
-	case "netware5Guest":
+	case "netware5":
 		os = OsType{Os: "NOVELL_OES", Version: "NetWare 5"}
-	case "netware6Guest":
+	case "netware6":
 		os = OsType{Os: "NOVELL_OES", Version: "NetWare 6"}
-	case "mandrivaGuest":
+	case "mandriva":
 		os = OsType{Os: "MANDRIVA", Version: ""}
-	case "mandriva64Guest":
+	case "mandriva-64":
 		os = OsType{Os: "MANDRIVA_64", Version: ""}
-	case "turboLinuxGuest":
+	case "turbolinux":
 		os = OsType{Os: "TURBOLINUX", Version: ""}
-	case "turboLinux64Guest":
+	case "turbolinux-64":
 		os = OsType{Os: "TURBOLINUX_64", Version: ""}
-	case "ubuntuGuest":
+	case "ubuntu":
 		os = OsType{Os: "UBUNTU", Version: ""}
-	case "ubuntu64Guest":
+	case "ubuntu-64":
 		os = OsType{Os: "UBUNTU_64", Version: ""}
-	case "debian4Guest":
+	case "debian4":
 		os = OsType{Os: "DEBIAN", Version: "4"}
-	case "debian5Guest":
+	case "debian5":
 		os = OsType{Os: "DEBIAN", Version: "5"}
-	case "debian6Guest":
+	case "debian6":
 		os = OsType{Os: "DEBIAN", Version: "6"}
-	case "debian4_64Guest":
+	case "debian4-64":
 		os = OsType{Os: "DEBIAN_64", Version: "4"}
-	case "debian5_64Guest":
+	case "debian5-64":
 		os = OsType{Os: "DEBIAN_64", Version: "5"}
-	case "debian6_64Guest":
+	case "debian6-64":
 		os = OsType{Os: "DEBIAN_64", Version: "6"}
-	case "windows8Guest":
+	case "windows8":
 		os = OsType{Os: "WINDOWS_8", Version: ""}
-	case "windows8_64Guest":
+	case "windows8-64":
 		os = OsType{Os: "WINDOWS_8_64", Version: ""}
-	case "windows8Server64Guest":
+	case "windows8srv-64":
 		os = OsType{Os: "WINDOWS_SERVER_2012", Version: ""}
-	case "other24xLinuxGuest":
+	case "other24xlinux":
 		os = OsType{Os: "LINUX_2_4", Version: ""}
-	case "other24xLinux64Guest":
+	case "other24xlinux-64":
 		os = OsType{Os: "LINUX_2_4_64", Version: ""}
-	case "other26xLinuxGuest":
+	case "other26xlinux":
 		os = OsType{Os: "LINUX_2_6", Version: ""}
-	case "other26xLinux64Guest":
+	case "other26xlinux-64":
 		os = OsType{Os: "LINUX_2_6_64", Version: ""}
-	case "centosGuest":
+	case "centos":
 		os = OsType{Os: "CENTOS", Version: ""}
-	case "centos64Guest":
+	case "centos-64":
 		os = OsType{Os: "CENTOS_64", Version: ""}
-	case "oracleLinuxGuest":
+	case "oraclelinux":
 		os = OsType{Os: "ORACLE_ENTERPRISE_LINUX", Version: ""}
-	case "oracleLinux64Guest":
+	case "oraclelinux-64":
 		os = OsType{Os: "ORACLE_ENTERPRISE_LINUX_64", Version: ""}
-	case "otherGuest64":
+	case "other-64":
 		os = OsType{Os: "OTHER_64", Version: ""}
-	case "freebsdGuest":
+	case "freebsd":
 		os = OsType{Os: "FREEBSD", Version: ""}
-	case "freebsd64Guest":
+	case "freebsd-64":
 		os = OsType{Os: "FREEBSD_64", Version: ""}
-	case "windows7Guest":
+	case "windows7":
 		os = OsType{Os: "WINDOWS_7", Version: ""}
-	case "windows7Server64Guest":
+	case "windows7srv-64":
 		os = OsType{Os: "WINDOWS_7", Version: "Server"}
-	case "windows7_64Guest":
+	case "windows7-64":
 		os = OsType{Os: "WINDOWS_7", Version: "64b"}
-	case "winNetStandardGuest":
+	case "winnetstandard":
 		os = OsType{Os: "WINDOWS_SERVER_2003", Version: ""}
-	case "winNetWebGuest":
+	case "winnetweb":
 		os = OsType{Os: "WINDOWS_SERVER_2003", Version: "Web"}
-	case "winNetBusinessGuest":
+	case "winnetbussiness":
 		os = OsType{Os: "WINDOWS_SERVER_2003", Version: "Business"}
-	case "winNetEnterpriseGuest":
+	case "winnetenterprise":
 		os = OsType{Os: "WINDOWS_SERVER_2003", Version: "Enterprise"}
-	case "winNetDatacenterGuest":
+	case "winnetdatacenter":
 		os = OsType{Os: "WINDOWS_SERVER_2003", Version: "Datacenter"}
-	case "winNetStandard64Guest":
+	case "winnetstandard-64":
 		os = OsType{Os: "WINDOWS_SERVER_2003_64", Version: ""}
-	case "winNetEnterprise64Guest":
+	case "winnetenterprise-64":
 		os = OsType{Os: "WINDOWS_SERVER_2003_64", Version: "Enterprise"}
-	case "winNetDatacenter64Guest":
+	case "winnetdatacenter-64":
 		os = OsType{Os: "WINDOWS_SERVER_2003_64", Version: "Datacenter"}
-	case "win31Guest":
+	case "win31":
 		os = OsType{Os: "WINDOWS", Version: "3.1"}
-	case "win95Guest":
+	case "win95":
 		os = OsType{Os: "WINDOWS", Version: "95"}
-	case "win98Guest":
+	case "win98":
 		os = OsType{Os: "WINDOWS", Version: "98"}
-	case "winMeGuest":
+	case "winme":
 		os = OsType{Os: "WINDOWS", Version: "ME"}
-	case "winNTGuest":
+	case "winnt":
 		os = OsType{Os: "WINDOWS", Version: "NT"}
-	case "win2000ProGuest":
+	case "win2000pro":
 		os = OsType{Os: "WINDOWS", Version: "2000 Pro"}
-	case "win2000AdvServGuest":
+	case "win2000advserv":
 		os = OsType{Os: "WINDOWS", Version: "2000 Avd"}
-	case "win2000ServGuest":
+	case "win2000serv":
 		os = OsType{Os: "WINDOWS", Version: "2000 Server"}
-	case "winXPHomeGuest":
+	case "winxphome":
 		os = OsType{Os: "WINDOWS", Version: "XP Home"}
-	case "winXPPro64Guest":
+	case "winxppro-64":
 		os = OsType{Os: "WINDOWS", Version: "XP Pro 64b"}
-	case "winXPProGuest":
+	case "winxppro":
 		os = OsType{Os: "WINDOWS", Version: "XP Pro"}
-	case "winLonghorn64Guest":
+	case "longhorn-64":
 		os = OsType{Os: "WINDOWS", Version: "Longhorn 64b"}
-	case "winLonghornGuest":
+	case "longhorn":
 		os = OsType{Os: "WINDOWS", Version: "Longhorn"}
-	case "winVista64Guest":
+	case "winvista-64":
 		os = OsType{Os: "WINDOWS", Version: "Vista 64b"}
-	case "winVistaGuest":
+	case "winvista":
 		os = OsType{Os: "WINDOWS", Version: "Vista"}
-	case "otherLinuxGuest":
+	case "otherlinux":
 		os = OsType{Os: "LINUX", Version: ""}
-	case "fedoraGuest":
+	case "fedora":
 		os = OsType{Os: "LINUX", Version: "Fedora"}
-	case "otherLinux64Guest":
+	case "otherlinux-64":
 		os = OsType{Os: "LINUX_64", Version: ""}
-	case "fedora64Guest":
+	case "fedora-64":
 		os = OsType{Os: "LINUX_64", Version: "Fedora"}
-	case "vmkernel5Guest":
+	case "vmkernel5":
 		os = OsType{Os: "ESXI", Version: "5"}
-	case "vmkernelGuest":
+	case "vmkernel":
 		os = OsType{Os: "ESXI", Version: "4"}
-	case "eComStationGuest":
+	case "ecomstation":
 		os = OsType{Os: "ECOMSTATION_32", Version: "1"}
-	case "eComStation2Guest":
+	case "ecomstation2":
 		os = OsType{Os: "ECOMSTATION_32", Version: "2"}
-	case "otherGuest":
+	// UNRECOGNIZED
+	case "other":
 	default:
 		os = OsType{Os: "UNRECOGNIZED", Version: ""}
 	}
+
 	return os
 }
