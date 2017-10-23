@@ -542,23 +542,24 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	ui.Say("Getting config items...")
 	var vmName string
 	var vmxOsType string
-	if p.config.Name == "" {
-		vmxFile, err := getFilesFromArtifact(p.config, artifact, "vmx")
-		if err != nil {
-			ui.Message(fmt.Sprintf("err: %s", err))
-		}
-		vmxData, err := vmwcommon.ReadVMX(vmxFile)
-		if err != nil {
-			ui.Message(fmt.Sprintf("err: %s", err))
-		}
-		vmName = vmxData["displayname"]
-		vmxOsType = vmxData["guestos"]
+
+	vmxFile, err := getFilesFromArtifact(p.config, artifact, "vmx")
+	if err != nil {
+		ui.Message(fmt.Sprintf("err getFiles: %s", err))
 	}
-	if vmName != "" {
+	vmxData, err := vmwcommon.ReadVMX(vmxFile)
+	if err != nil {
+		ui.Message(fmt.Sprintf("err ReadVMX: %s", err))
+	}
+	vmName = vmxData["displayname"]
+	vmxOsType = vmxData["guestos"]
+	log.Printf("DispName: %s, Guest: %s", vmxData["displayname"], vmxData["guestos"])
+
+	if p.config.Name == "" {
 		p.config.Name = vmName
-		if p.config.Description == "" {
-			p.config.Description = vmName
-		}
+	}
+	if p.config.Description == "" {
+		p.config.Description = vmName
 	}
 	if p.config.GuessOsType == "" {
 		p.config.GuessOsType = vmxOsType
