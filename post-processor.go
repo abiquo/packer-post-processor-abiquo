@@ -2,233 +2,112 @@ package main
 
 import (
 	"bufio"
-	"crypto/tls"
-	"encoding/json"
+	// "crypto/tls"
+	// "encoding/json"
 	"errors"
 	"fmt"
-	"gopkg.in/resty.v0"
-	"io/ioutil"
+	// "gopkg.in/resty.v0"
+	// "io/ioutil"
 	"log"
-	"net/http"
-	"os"
+	// "net/http"
+	// "os"
 	"os/exec"
 	"strconv"
 	"strings"
-	"time"
+	// "time"
 
 	vmwcommon "github.com/hashicorp/packer/builder/vmware/common"
 	"github.com/hashicorp/packer/common"
 	"github.com/hashicorp/packer/helper/config"
 	"github.com/hashicorp/packer/packer"
 	"github.com/hashicorp/packer/template/interpolate"
-	"github.com/technoweenie/multipartstreamer"
+	// "github.com/technoweenie/multipartstreamer"
+
+	"github.com/abiquo/packer-post-processor-abiquo/abiquo"
 )
 
-type DTO struct {
-	Links []Link `json:"links,omitempty"`
-}
+// func (c *Config) newfileUploadRequest(uri string, params map[string]string, paramName, path string) (*http.Response, error) {
+// 	tr := &http.Transport{
+// 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+// 	}
+// 	client := &http.Client{
+// 		Transport: tr,
+// 		Timeout:   time.Duration(7200 * time.Second),
+// 	}
 
-type Link struct {
-	Type  string `json:"type,omitempty"`
-	Href  string `json:"href,omitempty"`
-	Title string `json:"title,omitempty"`
-	Rel   string `json:"rel,omitempty"`
-}
+// 	ms := multipartstreamer.New()
 
-type Enterprise struct {
-	DTO
-	Name string
-}
+// 	ms.WriteFields(params)
 
-type Repo struct {
-	DTO
-	Name               string
-	RepositoryLocation string
-}
+// 	ms.WriteFile(paramName, path)
+// 	req, _ := http.NewRequest("POST", uri, nil)
+// 	req.SetBasicAuth(c.ApiUsername, c.ApiPassword)
+// 	ms.SetupRequest(req)
 
-type User struct {
-	DTO
-	Name  string
-	Email string
-}
+// 	return client.Do(req)
+// }
 
-type DiskDef struct {
-	DTO
-	Bootable                  bool   `json:"bootable,omitempty"`
-	Sequence                  int    `json:"sequence,omitempty"`
-	RequiredHDInMB            int    `json:"requiredHDInMB,omitempty"`
-	DiskFileFormat            string `json:"diskFileFormat,omitempty"`
-	VirtualMachineTemplateUrl string `json:"virtualMachineTemplateUrl,omitempty"`
-	DiskUrl                   string `json:"diskUrl,omitempty"`
-	CurrentPath               string `json:"currentPath,omitempty"`
-}
+// func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (VirtualMachineTemplate, error) {
+// 	var newTemplate VirtualMachineTemplate
+// 	log.Printf("Template def is : %v", def)
+// 	definition_json, err := def.ToJson()
+// 	if err != nil {
+// 		return VirtualMachineTemplate{}, err
+// 	}
+// 	log.Printf("Template def json is : %s", definition_json)
 
-type VMTDef struct {
-	Name               string `json:"name,omitempty"`
-	Description        string `json:"description,omitempty"`
-	CategoryName       string `json:"categoryName,omitempty"`
-	DiskFileFormat     string `json:"diskFileFormat,omitempty"`
-	RequiredCpu        string `json:"requiredCpu,omitempty"`
-	RequiredHDInMB     string `json:"requiredHDInMB,omitempty"`
-	RequiredRamInMB    string `json:"requiredRamInMB,omitempty"`
-	LoginUser          string `json:"loginUser,omitempty"`
-	LoginPassword      string `json:"loginPassword,omitempty"`
-	OsType             string `json:"osType,omitempty"`
-	OsVersion          string `json:"osVersion,omitempty"`
-	EthernetDriverType string `json:"ethernetDriverType,omitempty"`
-}
+// 	file, err := getFilesFromArtifact(config, artifact, "vmdk")
+// 	if err != nil {
+// 		return VirtualMachineTemplate{}, err
+// 	}
 
-type VirtualMachineTemplate struct {
-	DTO
-	Name                             string `json:"name,omitempty"`
-	ChefEnabled                      bool   `json:"chefEnabled,omitempty"`
-	CpuRequired                      int    `json:"cpuRequired,omitempty"`
-	CreationDate                     string `json:"creationDate,omitempty"`
-	CreationUser                     string `json:"creationUser,omitempty"`
-	Description                      string `json:"description,omitempty"`
-	EthernetDriverType               string `json:"ethernetDriverType,omitempty"`
-	IconUrl                          string `json:"iconUrl,omitempty"`
-	Id                               int    `json:"id,omitempty"`
-	LoginPassword                    string `json:"loginPassword,omitempty"`
-	LoginUser                        string `json:"loginUser,omitempty"`
-	OsType                           string `json:"osType,omitempty"`
-	OsVersion                        string `json:"osVersion,omitempty"`
-	RamRequired                      int    `json:"ramRequired,omitempty"`
-	State                            string `json:"state,omitempty"`
-	EnableCpuHotAdd                  bool   `json:"enableCpuHotAdd,omitempty"`
-	EnableRamHotAdd                  bool   `json:"enableRamHotAdd,omitempty"`
-	EnableDisksHotReconfigure        bool   `json:"enableDisksHotReconfigure,omitempty"`
-	EnableNicsHotReconfigure         bool   `json:"enableNicsHotReconfigure,omitempty"`
-	EnableRemoteAccessHotReconfigure bool   `json:"enableRemoteAccessHotReconfigure,omitempty"`
-}
+// 	post_url := ""
+// 	for _, link := range repo.Links {
+// 		if link.Rel == "applianceManagerRepositoryUri" {
+// 			post_url = link.Href + "/templates"
+// 		}
+// 	}
+// 	if post_url == "" {
+// 		return VirtualMachineTemplate{}, errors.New("Could not find AM repo URI.")
+// 	}
 
-type TemplateDisk struct {
-	DTO
-	Label              string `json:"label,omitempty"`
-	Sequence           int    `json:"sequence,omitempty"`
-	Path               string `json:"path,omitempty"`
-	DiskFormatType     string `json:"diskFormatType,omitempty"`
-	DiskFileSize       int    `json:"diskFileSize,omitempty"`
-	HdRequired         int    `json:"hdRequired,omitempty"`
-	State              string `json:"state,omitempty"`
-	DiskControllerType string `json:"diskControllerType,omitempty"`
-	DiskController     string `json:"diskController,omitempty"`
-	CreationDate       string `json:"creationDate,omitempty"`
-	Bootable           bool   `json:"bootable,omitempty"`
-}
+// 	params := map[string]string{
+// 		"diskInfo": string(definition_json),
+// 	}
+// 	resp, err := config.newfileUploadRequest(post_url, params, "diskFile", file)
+// 	if err != nil {
+// 		log.Printf("ERROR uploading file!", err)
+// 		return newTemplate, err
+// 	}
 
-func (dto *DTO) GetLink(rel string) Link {
-	for _, link := range dto.Links {
-		if link.Rel == rel {
-			return link
-		}
-	}
-	return Link{}
-}
+// 	location, err := resp.Location()
+// 	if err != nil {
+// 		log.Printf("Upload response did not had a location header!")
+// 		log.Printf("Response code was : %d", resp.StatusCode)
+// 		defer resp.Body.Close()
+// 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+// 		bodyString := string(bodyBytes)
+// 		log.Printf("Body was : %s", bodyString)
+// 		return newTemplate, err
+// 	}
 
-func (d *DiskDef) ToJson() ([]byte, error) {
-	str, err := json.Marshal(d)
-	return str, err
-}
+// 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+// 	rclient := resty.R().SetBasicAuth(config.ApiUsername, config.ApiPassword)
+// 	respt, err := rclient.
+// 		SetHeader("Accept", "application/vnd.abiquo.virtualmachinetemplate+json").
+// 		Get(location.String())
+// 	if err != nil {
+// 		return newTemplate, err
+// 	}
 
-func (template *VirtualMachineTemplate) ToJson() ([]byte, error) {
-	str, err := json.Marshal(template)
-	return str, err
-}
+// 	json.Unmarshal(respt.Body(), &newTemplate)
+// 	return newTemplate, err
+// }
 
-func (def *VMTDef) ToJson() ([]byte, error) {
-	str, err := json.Marshal(def)
-	return str, err
-}
-
-func handleErr(err error) {
-	if err != nil {
-		log.Fatalf("%s\n", err)
-	}
-}
-
-func (c *Config) newfileUploadRequest(uri string, params map[string]string, paramName, path string) (*http.Response, error) {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   time.Duration(7200 * time.Second),
-	}
-
-	ms := multipartstreamer.New()
-
-	ms.WriteFields(params)
-
-	ms.WriteFile(paramName, path)
-	req, _ := http.NewRequest("POST", uri, nil)
-	req.SetBasicAuth(c.ApiUsername, c.ApiPassword)
-	ms.SetupRequest(req)
-
-	return client.Do(req)
-}
-
-func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (VirtualMachineTemplate, error) {
-	var newTemplate VirtualMachineTemplate
-	log.Printf("Template def is : %v", def)
-	definition_json, err := def.ToJson()
-	if err != nil {
-		return VirtualMachineTemplate{}, err
-	}
-	log.Printf("Template def json is : %s", definition_json)
-
-	file, err := getFilesFromArtifact(config, artifact, "vmdk")
-	if err != nil {
-		return VirtualMachineTemplate{}, err
-	}
-
-	post_url := ""
-	for _, link := range repo.Links {
-		if link.Rel == "applianceManagerRepositoryUri" {
-			post_url = link.Href + "/templates"
-		}
-	}
-	if post_url == "" {
-		return VirtualMachineTemplate{}, errors.New("Could not find AM repo URI.")
-	}
-
-	params := map[string]string{
-		"diskInfo": string(definition_json),
-	}
-	resp, err := config.newfileUploadRequest(post_url, params, "diskFile", file)
-	if err != nil {
-		log.Printf("ERROR uploading file!", err)
-		return newTemplate, err
-	}
-
-	location, err := resp.Location()
-	if err != nil {
-		log.Printf("Upload response did not had a location header!")
-		log.Printf("Response code was : %d", resp.StatusCode)
-		defer resp.Body.Close()
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		bodyString := string(bodyBytes)
-		log.Printf("Body was : %s", bodyString)
-		return newTemplate, err
-	}
-
-	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	rclient := resty.R().SetBasicAuth(config.ApiUsername, config.ApiPassword)
-	respt, err := rclient.
-		SetHeader("Accept", "application/vnd.abiquo.virtualmachinetemplate+json").
-		Get(location.String())
-	if err != nil {
-		return newTemplate, err
-	}
-
-	json.Unmarshal(respt.Body(), &newTemplate)
-	return newTemplate, err
-}
-
-func (templatedef *VMTDef) GetDiskFileInfo(config Config, artifact packer.Artifact) (string, int, error) {
+func (p *PostProcessor) GetDiskFileInfo(artifact packer.Artifact) (string, int, error) {
 	var abqFormat string
 
-	file, err := getFilesFromArtifact(config, artifact, "vmdk")
+	file, err := getFilesFromArtifact(p.config, artifact, "vmdk")
 	if err != nil {
 		return abqFormat, 0, err
 	}
@@ -300,110 +179,90 @@ func (templatedef *VMTDef) GetDiskFileInfo(config Config, artifact packer.Artifa
 	return abqFormat, fileSize, nil
 }
 
-func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskDef, artifact packer.Artifact) (VirtualMachineTemplate, error) {
-	var newTemplate VirtualMachineTemplate
+// func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskDef, artifact packer.Artifact) (VirtualMachineTemplate, error) {
+// 	var newTemplate VirtualMachineTemplate
 
-	log.Printf("Disk def is : %v", diskdef)
-	diskdef_json, err := diskdef.ToJson()
-	if err != nil {
-		return newTemplate, err
-	}
-	log.Printf("Disk def json is : %s", string(diskdef_json))
+// 	log.Printf("Disk def is : %v", diskdef)
+// 	diskdef_json, err := diskdef.ToJson()
+// 	if err != nil {
+// 		return newTemplate, err
+// 	}
+// 	log.Printf("Disk def json is : %s", string(diskdef_json))
 
-	file, err := getFilesFromArtifact(config, artifact, "vmdk")
-	if err != nil {
-		return newTemplate, err
-	}
+// 	file, err := getFilesFromArtifact(config, artifact, "vmdk")
+// 	if err != nil {
+// 		return newTemplate, err
+// 	}
 
-	templateUpdateUrl := t.GetLink("templatePath").Href
+// 	templateUpdateUrl := t.GetLink("templatePath").Href
 
-	params := map[string]string{
-		"diskInfo": string(diskdef_json),
-	}
-	_, err = config.newfileUploadRequest(templateUpdateUrl, params, "diskFile", file)
-	if err != nil {
-		log.Printf("ERROR uploading file!", err)
-		return newTemplate, err
-	}
+// 	params := map[string]string{
+// 		"diskInfo": string(diskdef_json),
+// 	}
+// 	_, err = config.newfileUploadRequest(templateUpdateUrl, params, "diskFile", file)
+// 	if err != nil {
+// 		log.Printf("ERROR uploading file!", err)
+// 		return newTemplate, err
+// 	}
 
-	rclient := resty.R().SetBasicAuth(config.ApiUsername, config.ApiPassword)
-	respt, err := rclient.
-		SetHeader("Accept", t.GetLink("edit").Type).
-		Get(t.GetLink("edit").Href)
-	if err != nil {
-		return newTemplate, err
-	}
+// 	rclient := resty.R().SetBasicAuth(config.ApiUsername, config.ApiPassword)
+// 	respt, err := rclient.
+// 		SetHeader("Accept", t.GetLink("edit").Type).
+// 		Get(t.GetLink("edit").Href)
+// 	if err != nil {
+// 		return newTemplate, err
+// 	}
 
-	json.Unmarshal(respt.Body(), &newTemplate)
-	return newTemplate, err
-}
+// 	json.Unmarshal(respt.Body(), &newTemplate)
+// 	return newTemplate, err
+// }
 
-func (t *VirtualMachineTemplate) Update(config Config) error {
-	template_json, err := t.ToJson()
-	if err != nil {
-		return err
-	}
-	log.Printf("Template json is : %s", string(template_json))
+// func (t *VirtualMachineTemplate) Update(config Config) error {
+// 	template_json, err := t.ToJson()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	log.Printf("Template json is : %s", string(template_json))
 
-	templateUrl := t.GetLink("edit").Href
-	templateType := t.GetLink("edit").Type
+// 	templateUrl := t.GetLink("edit").Href
+// 	templateType := t.GetLink("edit").Type
 
-	if os.Getenv("RESTYDEBUG") != "" {
-		// Enable debug mode
-		resty.SetDebug(true)
+// 	if os.Getenv("RESTYDEBUG") != "" {
+// 		// Enable debug mode
+// 		resty.SetDebug(true)
 
-		// Using you custom log writer
-		logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-		resty.SetLogger(logFile)
-	}
+// 		// Using you custom log writer
+// 		logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+// 		resty.SetLogger(logFile)
+// 	}
 
-	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	resp, err := resty.R().
-		SetBasicAuth(config.ApiUsername, config.ApiPassword).
-		SetHeader("Accept", templateType).
-		SetHeader("Content-Type", templateType).
-		SetBody(string(template_json)).
-		Put(templateUrl)
-	if err != nil {
-		return err
-	}
+// 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+// 	resp, err := resty.R().
+// 		SetBasicAuth(config.ApiUsername, config.ApiPassword).
+// 		SetHeader("Accept", templateType).
+// 		SetHeader("Content-Type", templateType).
+// 		SetBody(string(template_json)).
+// 		Put(templateUrl)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	json.Unmarshal(resp.Body(), &t)
-	return nil
-}
-
-type AbstractCollection struct {
-	Links     []Link
-	TotalSize int
-}
-
-type RepoCollection struct {
-	AbstractCollection
-	Collection []Repo
-}
-
-type EntCollection struct {
-	AbstractCollection
-	Collection []Enterprise
-}
-
-type UserCollection struct {
-	AbstractCollection
-	Collection []User
-}
-
-type TemplateCollection struct {
-	AbstractCollection
-	Collection []VirtualMachineTemplate
-}
+// 	json.Unmarshal(resp.Body(), &t)
+// 	return nil
+// }
 
 type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
 
 	// Fields from config file
 	ApiUrl            string `mapstructure:"api_url"`
+	Insecure          bool   `mapstructure:"api_insecure"`
 	ApiUsername       string `mapstructure:"api_username"`
 	ApiPassword       string `mapstructure:"api_password"`
+	AppKey            string `mapstructure:"app_key"`
+	AppSecret         string `mapstructure:"app_secret"`
+	AccessToken       string `mapstructure:"access_token"`
+	AccessTokenSecret string `mapstructure:"access_token_secret"`
 	Datacenter        string `mapstructure:"datacenter"`
 	KeepInputArtifact bool   `mapstructure:"keep_input_artifact"`
 
@@ -437,6 +296,15 @@ type PostProcessor struct {
 	config Config
 }
 
+func (p *PostProcessor) getClient() *abiquo_api.AbiquoClient {
+	if p.config.AppKey != "" {
+		return abiquo_api.GetOAuthClient(p.config.ApiUrl, p.config.AppKey, p.config.AppSecret, p.config.AccessToken, p.config.AccessTokenSecret, p.config.Insecure)
+	} else if p.config.ApiUsername != "" {
+		return abiquo_api.GetClient(p.config.ApiUrl, p.config.ApiUsername, p.config.ApiPassword, p.config.Insecure)
+	}
+	return nil
+}
+
 func (p *PostProcessor) Configure(raws ...interface{}) error {
 	err := config.Decode(&p.config, &config.DecodeOpts{
 		Interpolate:        true,
@@ -452,12 +320,12 @@ func (p *PostProcessor) Configure(raws ...interface{}) error {
 		errs = packer.MultiErrorAppend(errs, fmt.Errorf("Abiquo API URL is missing!"))
 	}
 
-	if p.config.ApiUsername == "" {
-		errs = packer.MultiErrorAppend(errs, fmt.Errorf("Abiquo API username is missing!"))
+	if p.config.ApiUsername == "" && p.config.AppKey == "" {
+		errs = packer.MultiErrorAppend(errs, fmt.Errorf("Abiquo API username or Oauth app keys are missing!"))
 	}
 
-	if p.config.ApiPassword == "" {
-		errs = packer.MultiErrorAppend(errs, fmt.Errorf("Abiquo API password is missing!"))
+	if p.config.ApiUsername != "" && p.config.ApiPassword == "" {
+		errs = packer.MultiErrorAppend(errs, fmt.Errorf("Abiquo API username provided but no password!"))
 	}
 
 	if p.config.CategoryName == "" {
@@ -513,7 +381,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	}
 	vmName = vmxData["displayname"]
 	vmxOsType = vmxData["guestos"]
-	log.Printf("DispName: %s, Guest: %s", vmxData["displayname"], vmxData["guestos"])
+	log.Printf("DispName: '%s', Guest: '%s'", vmxData["displayname"], vmxData["guestos"])
 
 	if p.config.Name == "" {
 		p.config.Name = vmName
@@ -525,47 +393,70 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 		p.config.GuessOsType = vmxOsType
 	}
 
+	abq := p.getClient()
+
 	ui.Say("Looking up the repo URL for datacenter '" + p.config.Datacenter + "'")
-	repo, err := p.config.FindRepoUrl()
+	repo, err := p.FindRepoUrl()
 	log.Printf("Repo found at: '%s'", repo.RepositoryLocation)
 	if err != nil {
 		return artifact, p.config.KeepInputArtifact, err
 	}
 
 	ui.Say("Checking if a template named '" + p.config.Name + "' already exists...")
-	var template VirtualMachineTemplate
-	exists, template, err := p.config.CheckTemplateExists(repo)
+	var template abiquo_api.VirtualMachineTemplate
+	exists, template, err := p.CheckTemplateExists(repo)
+	if err != nil {
+		return artifact, p.config.KeepInputArtifact, err
+	}
+
 	if exists {
 		ui.Say("Template already exists. Replacing primary disk...")
-		diskdef := p.config.BuildDiskDef(template)
-		templatedef := p.config.BuildTemplateDef()
-		abqdiskformat, size, err := templatedef.GetDiskFileInfo(p.config, artifact)
+		diskdef, err := p.BuildDiskDef(template)
 		if err != nil {
 			return artifact, p.config.KeepInputArtifact, err
 		}
+
+		abqdiskformat, size, err := p.GetDiskFileInfo(artifact)
+		if err != nil {
+			return artifact, p.config.KeepInputArtifact, err
+		}
+
 		diskdef.RequiredHDInMB = size
 		diskdef.DiskFileFormat = abqdiskformat
-		template, err := template.ReplacePrimaryDisk(p.config, diskdef, artifact)
+		file, err := getFilesFromArtifact(p.config, artifact, "vmdk")
 		if err != nil {
 			return artifact, p.config.KeepInputArtifact, err
 		}
-		ui.Say("Upload complete. The URL of the updated template is " + template.GetLink("edit").Href)
+		template, err := template.ReplacePrimaryDisk(abq, diskdef, file)
+		if err != nil {
+			return artifact, p.config.KeepInputArtifact, err
+		}
+
+		template_link, _ := template.GetLink("edit")
+		ui.Say("Upload complete. The URL of the updated template is " + template_link.Href)
 	} else {
 		ui.Say("Uploading template...")
 		templatedef := p.config.BuildTemplateDef()
-		abqdiskformat, size, err := templatedef.GetDiskFileInfo(p.config, artifact)
+		abqdiskformat, size, err := p.GetDiskFileInfo(artifact)
 		if err != nil {
 			return artifact, p.config.KeepInputArtifact, err
 		}
+
+		file, err := getFilesFromArtifact(p.config, artifact, "vmdk")
+		if err != nil {
+			return artifact, p.config.KeepInputArtifact, err
+		}
+
 		templatedef.DiskFileFormat = abqdiskformat
 		templatedef.RequiredHDInMB = strconv.Itoa(size)
-		templateUploaded, err := templatedef.Upload(p.config, repo, artifact)
+		templateUploaded, err := templatedef.Upload(abq, repo, file)
 		log.Printf("Uploaded template : %v", templateUploaded)
-		exists, template, err = p.config.CheckTemplateExists(repo)
+		exists, template, err = p.CheckTemplateExists(repo)
 		if exists {
 			log.Printf("Found new template '%s'", template.Name)
 		}
-		ui.Say("Upload complete. The URL of the new template is " + template.GetLink("edit").Href)
+		template_link, _ := template.GetLink("edit")
+		ui.Say("Upload complete. The URL of the new template is " + template_link.Href)
 	}
 
 	ui.Say("Updating template with extra attributes...")
@@ -578,116 +469,85 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	template.EnableDisksHotReconfigure = p.config.EnableDisksHotReconfigure
 	template.EnableNicsHotReconfigure = p.config.EnableNicsHotReconfigure
 	template.EnableRemoteAccessHotReconfigure = p.config.EnableRemoteAccessHotReconfigure
-	template.Update(p.config)
+	template.Update(abq)
 
-	newArtifact := &Artifact{Url: template.GetLink("edit").Href}
+	template_link, _ := template.GetLink("edit")
+	newArtifact := &Artifact{Url: template_link.Href}
 	return newArtifact, false, nil
 }
 
-func (config *Config) FindRepoUrl() (Repo, error) {
-	log.Printf("Trying to find the repo URL for Datacenter '%s'\n", config.Datacenter)
-	login_url := config.ApiUrl + "/login"
-	log.Printf("Login URL: %s\n", login_url)
-	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	rclient := resty.R().SetBasicAuth(config.ApiUsername, config.ApiPassword)
-	resp, err := rclient.
-		SetHeader("Accept", "application/vnd.abiquo.user+json").
-		Get(login_url)
-	log.Printf("Request done.\n")
+func (p *PostProcessor) FindRepoUrl() (abiquo_api.Repo, error) {
+	var repo abiquo_api.Repo
+	var ent abiquo_api.Enterprise
+
+	abq := p.getClient()
+	log.Printf("Trying to find the repo URL for Datacenter '%s'\n", p.config.Datacenter)
+
+	user, err := abq.Login()
 	if err != nil {
-		log.Printf("Error on request: %s\n", err)
-		return Repo{}, err
+		return repo, err
 	}
 
-	var user User
-	json.Unmarshal(resp.Body(), &user)
-	for _, link := range user.Links {
-		if link.Rel == "enterprise" {
-			resp, err = rclient.SetHeader("Accept", link.Type).Get(link.Href)
-			if err != nil {
-				return Repo{}, err
-			}
+	ent, err = user.GetEnterprise(abq)
+	if err != nil {
+		return repo, err
+	}
 
-			var ent Enterprise
-			json.Unmarshal(resp.Body(), &ent)
-
-			for _, link = range ent.Links {
-				link_rel := link.Rel
-				if link_rel == "datacenterrepositories" {
-					resp, err = rclient.SetHeader("Accept", link.Type).Get(link.Href)
-					if err != nil {
-						return Repo{}, err
-					}
-
-					var repos RepoCollection
-					json.Unmarshal([]byte(resp.Body()), &repos)
-
-					for _, repo := range repos.Collection {
-						for _, repolink := range repo.Links {
-							if repolink.Rel == "datacenter" && repolink.Title == config.Datacenter {
-								return repo, err
-								log.Printf("Found URL '%s' (%s) for DC '%s'", repo.Name, repo.RepositoryLocation, config.Datacenter)
-							}
-						}
-					}
-				}
-			}
+	repos, err := ent.GetRepos(abq)
+	for _, repo := range repos {
+		dc_lnk, _ := repo.GetLink("datacenter")
+		if dc_lnk.Title == p.config.Datacenter {
+			log.Printf("Found URL '%s' (%s) for DC '%s'", repo.Name, repo.RepositoryLocation, p.config.Datacenter)
+			return repo, err
 		}
 	}
-	log.Printf("Could not find the URL for DC '%s'!", config.Datacenter)
-	return Repo{}, err
+
+	errorMsg := fmt.Sprintf("Could not find the URL for DC '%s'!", p.config.Datacenter)
+	return repo, errors.New(errorMsg)
 }
 
-func (config *Config) CheckTemplateExists(repo Repo) (bool, VirtualMachineTemplate, error) {
-	var template VirtualMachineTemplate
-	log.Printf("Checking if a template with name '%s' already exists.", config.Name)
-	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	rclient := resty.R().SetBasicAuth(config.ApiUsername, config.ApiPassword)
+func (p *PostProcessor) CheckTemplateExists(repo abiquo_api.Repo) (bool, abiquo_api.VirtualMachineTemplate, error) {
+	var template abiquo_api.VirtualMachineTemplate
+	log.Printf("Checking if a template with name '%s' already exists.", p.config.Name)
+	abq := p.getClient()
 
-	for _, link := range repo.Links {
-		if link.Rel == "virtualmachinetemplates" {
-			resp, err := rclient.
-				SetHeader("Accept", link.Type).
-				SetQueryParam("limit", "0").
-				Get(link.Href)
-			if err != nil {
-				return false, template, err
-			}
+	templates, err := repo.GetTemplates(abq)
+	if err != nil {
+		return false, template, err
+	}
 
-			var templatescol TemplateCollection
-			json.Unmarshal([]byte(resp.Body()), &templatescol)
-			for _, tmpl := range templatescol.Collection {
-				if tmpl.Name == config.Name {
-					log.Printf("Found.")
-					tmpljson, err := tmpl.ToJson()
-					log.Printf("Template '%s' with DTO : %s", tmpl.Name, tmpljson)
-					return true, tmpl, err
-				}
-			}
+	for _, t := range templates {
+		if t.Name == p.config.Name {
+			template_lnk, _ := t.GetLink("edit")
+			log.Printf("Found template in URL: '%s'", template_lnk.Href)
+			return true, t, nil
 		}
 	}
 	log.Printf("Not found.")
 	return false, template, nil
 }
 
-func (config *Config) BuildDiskDef(template VirtualMachineTemplate) DiskDef {
-	var disk DiskDef
-	template_url := template.GetLink("edit").Href
-	diskUrl := template.GetLink("disk0").Href
+func (p *PostProcessor) BuildDiskDef(template abiquo_api.VirtualMachineTemplate) (abiquo_api.DiskDef, error) {
+	var disk abiquo_api.DiskDef
+	var primaryDisk abiquo_api.Disk
+	abq := p.getClient()
 
-	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	rclient := resty.R().SetBasicAuth(config.ApiUsername, config.ApiPassword)
-	resp, err := rclient.
-		SetHeader("Accept", template.GetLink("disk0").Type).
-		Get(template.GetLink("disk0").Href)
+	template_link, _ := template.GetLink("edit")
+	template_url := template_link.Href
+	disks, err := template.GetDisks(abq)
 	if err != nil {
-		return disk
+		return disk, err
 	}
 
-	var primaryDisk TemplateDisk
-	json.Unmarshal([]byte(resp.Body()), &primaryDisk)
+	for _, d := range disks {
+		if d.Sequence == 0 {
+			primaryDisk = d
+		}
+	}
+	disk_link, _ := primaryDisk.GetLink("edit")
+	diskUrl := disk_link.Href
 
-	disk = DiskDef{
+	disk = abiquo_api.DiskDef{
 		Bootable:                  true,
 		Sequence:                  0,
 		RequiredHDInMB:            0,
@@ -697,15 +557,15 @@ func (config *Config) BuildDiskDef(template VirtualMachineTemplate) DiskDef {
 		CurrentPath:               primaryDisk.Path,
 	}
 
-	return disk
+	return disk, nil
 }
 
-func (config *Config) BuildTemplateDef() VMTDef {
-	log.Printf("Trying to parse guest os type %s", config.GuessOsType)
+func (config *Config) BuildTemplateDef() abiquo_api.VMTDef {
+	log.Printf("Trying to parse guest os type '%s'", config.GuessOsType)
 	ostype := OsTypeFromGuest(config.GuessOsType)
-	log.Printf("My best guess... %s, version %s", ostype.Os, ostype.Version)
+	log.Printf("My best guess... '%s', version '%s'", ostype.Os, ostype.Version)
 
-	definition := VMTDef{
+	definition := abiquo_api.VMTDef{
 		Name:               config.Name,
 		Description:        config.Description,
 		CategoryName:       config.CategoryName,

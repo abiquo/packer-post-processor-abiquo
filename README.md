@@ -19,8 +19,13 @@ The plugin provides a new postprocessor named `abiquo` with the following availa
 | Name                          | Description                                                    |
 |-------------------------------|----------------------------------------------------------------|
 | `api_url`                     | The Abiquo API endpoint URL. Eg. `https://some.host/api` |
+| `api_insecure`                | A boolean specifying if wrong certificates should be trusted (eg. self-signed certs) |
 | `api_username`                | The Username for the Abiquo API. Eg. `tmpluser` |
 | `api_password`                | The password for the aforementioned user. Eg. `somepass` |
+| `app_key`                     | Abiquo OAuth 1.0a app key |
+| `app_secret`                  | Abiquo OAuth 1.0a app secret |
+| `access_token`                | Abiquo OAuth 1.0a access token |
+| `access_token_secret`         | Abiquo OAuth 1.0a access token secret |
 | `datacenter`                  | The Abiquo datacenter name where to upload the template. Eg. `dclocation1` |
 | `keep_input_artifact`         | Wheter or not to keep the input artifact. Default is `false` |
 | `template_name`               | The name of the template to be created in Abiquo. Defaults to the packer VM name. |
