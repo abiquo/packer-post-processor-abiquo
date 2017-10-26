@@ -2,16 +2,13 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"gopkg.in/resty.v0"
-	"io"
 	"io/ioutil"
 	"log"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
@@ -24,6 +21,7 @@ import (
 	"github.com/hashicorp/packer/helper/config"
 	"github.com/hashicorp/packer/packer"
 	"github.com/hashicorp/packer/template/interpolate"
+	"github.com/technoweenie/multipartstreamer"
 )
 
 type DTO struct {
@@ -143,41 +141,31 @@ func (def *VMTDef) ToJson() ([]byte, error) {
 	return str, err
 }
 
-// https://gist.github.com/mattetti/5914158/f4d1393d83ebedc682a3c8e7bdc6b49670083b84
-// Creates a new file upload http request with optional extra params
-func newfileUploadRequest(uri string, params map[string]string, paramName, path string) (*http.Request, error) {
-	file, err := os.Open(path)
+func handleErr(err error) {
 	if err != nil {
-		return nil, err
+		log.Fatalf("%s\n", err)
 	}
-	defer file.Close()
+}
 
-	fi, err := file.Stat()
-	if err != nil {
-		return nil, err
+func (c *Config) newfileUploadRequest(uri string, params map[string]string, paramName, path string) (*http.Response, error) {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
-
-	body := new(bytes.Buffer)
-	writer := multipart.NewWriter(body)
-	buf := make([]byte, 1024*1024*1024)
-	part, err := writer.CreateFormFile(paramName, fi.Name())
-	if err != nil {
-		return nil, err
-	}
-	// io.Copy(part, file)
-	io.CopyBuffer(part, file, buf)
-
-	for key, val := range params {
-		_ = writer.WriteField(key, val)
-	}
-	err = writer.Close()
-	if err != nil {
-		return nil, err
+	client := &http.Client{
+		Transport: tr,
+		Timeout:   time.Duration(7200 * time.Second),
 	}
 
-	request, err := http.NewRequest("POST", uri, body)
-	request.Header.Add("Content-Type", writer.FormDataContentType())
-	return request, err
+	ms := multipartstreamer.New()
+
+	ms.WriteFields(params)
+
+	ms.WriteFile(paramName, path)
+	req, _ := http.NewRequest("POST", uri, nil)
+	req.SetBasicAuth(c.ApiUsername, c.ApiPassword)
+	ms.SetupRequest(req)
+
+	return client.Do(req)
 }
 
 func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (VirtualMachineTemplate, error) {
@@ -207,21 +195,7 @@ func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (V
 	params := map[string]string{
 		"diskInfo": string(definition_json),
 	}
-	request, err := newfileUploadRequest(post_url, params, "diskFile", file)
-	request.SetBasicAuth(config.ApiUsername, config.ApiPassword)
-	if err != nil {
-		log.Printf("ERROR ON UPLOAD!", err)
-		return newTemplate, err
-	}
-
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   time.Duration(7200 * time.Second),
-	}
-	resp, err := client.Do(request)
+	resp, err := config.newfileUploadRequest(post_url, params, "diskFile", file)
 	if err != nil {
 		log.Printf("ERROR uploading file!", err)
 		return newTemplate, err
@@ -346,21 +320,7 @@ func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskD
 	params := map[string]string{
 		"diskInfo": string(diskdef_json),
 	}
-	request, err := newfileUploadRequest(templateUpdateUrl, params, "diskFile", file)
-	request.SetBasicAuth(config.ApiUsername, config.ApiPassword)
-	if err != nil {
-		log.Printf("ERROR ON UPLOAD!", err)
-		return newTemplate, err
-	}
-
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{
-		Transport: tr,
-		Timeout:   time.Duration(7200 * time.Second),
-	}
-	_, err = client.Do(request)
+	_, err = config.newfileUploadRequest(templateUpdateUrl, params, "diskFile", file)
 	if err != nil {
 		log.Printf("ERROR uploading file!", err)
 		return newTemplate, err
@@ -564,10 +524,10 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	if p.config.GuessOsType == "" {
 		p.config.GuessOsType = vmxOsType
 	}
-	log.Printf("Config is : %v", p.config)
 
 	ui.Say("Looking up the repo URL for datacenter '" + p.config.Datacenter + "'")
 	repo, err := p.config.FindRepoUrl()
+	log.Printf("Repo found at: '%s'", repo.RepositoryLocation)
 	if err != nil {
 		return artifact, p.config.KeepInputArtifact, err
 	}
