@@ -2,107 +2,21 @@ package main
 
 import (
 	"bufio"
-	// "crypto/tls"
-	// "encoding/json"
 	"errors"
 	"fmt"
-	// "gopkg.in/resty.v0"
-	// "io/ioutil"
 	"log"
-	// "net/http"
-	// "os"
 	"os/exec"
 	"strconv"
 	"strings"
-	// "time"
 
 	vmwcommon "github.com/hashicorp/packer/builder/vmware/common"
 	"github.com/hashicorp/packer/common"
 	"github.com/hashicorp/packer/helper/config"
 	"github.com/hashicorp/packer/packer"
 	"github.com/hashicorp/packer/template/interpolate"
-	// "github.com/technoweenie/multipartstreamer"
 
-	"github.com/abiquo/packer-post-processor-abiquo/abiquo"
+	"github.com/abiquo/api-go-client"
 )
-
-// func (c *Config) newfileUploadRequest(uri string, params map[string]string, paramName, path string) (*http.Response, error) {
-// 	tr := &http.Transport{
-// 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-// 	}
-// 	client := &http.Client{
-// 		Transport: tr,
-// 		Timeout:   time.Duration(7200 * time.Second),
-// 	}
-
-// 	ms := multipartstreamer.New()
-
-// 	ms.WriteFields(params)
-
-// 	ms.WriteFile(paramName, path)
-// 	req, _ := http.NewRequest("POST", uri, nil)
-// 	req.SetBasicAuth(c.ApiUsername, c.ApiPassword)
-// 	ms.SetupRequest(req)
-
-// 	return client.Do(req)
-// }
-
-// func (def *VMTDef) Upload(config Config, repo Repo, artifact packer.Artifact) (VirtualMachineTemplate, error) {
-// 	var newTemplate VirtualMachineTemplate
-// 	log.Printf("Template def is : %v", def)
-// 	definition_json, err := def.ToJson()
-// 	if err != nil {
-// 		return VirtualMachineTemplate{}, err
-// 	}
-// 	log.Printf("Template def json is : %s", definition_json)
-
-// 	file, err := getFilesFromArtifact(config, artifact, "vmdk")
-// 	if err != nil {
-// 		return VirtualMachineTemplate{}, err
-// 	}
-
-// 	post_url := ""
-// 	for _, link := range repo.Links {
-// 		if link.Rel == "applianceManagerRepositoryUri" {
-// 			post_url = link.Href + "/templates"
-// 		}
-// 	}
-// 	if post_url == "" {
-// 		return VirtualMachineTemplate{}, errors.New("Could not find AM repo URI.")
-// 	}
-
-// 	params := map[string]string{
-// 		"diskInfo": string(definition_json),
-// 	}
-// 	resp, err := config.newfileUploadRequest(post_url, params, "diskFile", file)
-// 	if err != nil {
-// 		log.Printf("ERROR uploading file!", err)
-// 		return newTemplate, err
-// 	}
-
-// 	location, err := resp.Location()
-// 	if err != nil {
-// 		log.Printf("Upload response did not had a location header!")
-// 		log.Printf("Response code was : %d", resp.StatusCode)
-// 		defer resp.Body.Close()
-// 		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-// 		bodyString := string(bodyBytes)
-// 		log.Printf("Body was : %s", bodyString)
-// 		return newTemplate, err
-// 	}
-
-// 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-// 	rclient := resty.R().SetBasicAuth(config.ApiUsername, config.ApiPassword)
-// 	respt, err := rclient.
-// 		SetHeader("Accept", "application/vnd.abiquo.virtualmachinetemplate+json").
-// 		Get(location.String())
-// 	if err != nil {
-// 		return newTemplate, err
-// 	}
-
-// 	json.Unmarshal(respt.Body(), &newTemplate)
-// 	return newTemplate, err
-// }
 
 func (p *PostProcessor) GetDiskFileInfo(artifact packer.Artifact) (string, int, error) {
 	var abqFormat string
@@ -178,78 +92,6 @@ func (p *PostProcessor) GetDiskFileInfo(artifact packer.Artifact) (string, int, 
 	log.Printf("Abiquo format: %s", abqFormat)
 	return abqFormat, fileSize, nil
 }
-
-// func (t *VirtualMachineTemplate) ReplacePrimaryDisk(config Config, diskdef DiskDef, artifact packer.Artifact) (VirtualMachineTemplate, error) {
-// 	var newTemplate VirtualMachineTemplate
-
-// 	log.Printf("Disk def is : %v", diskdef)
-// 	diskdef_json, err := diskdef.ToJson()
-// 	if err != nil {
-// 		return newTemplate, err
-// 	}
-// 	log.Printf("Disk def json is : %s", string(diskdef_json))
-
-// 	file, err := getFilesFromArtifact(config, artifact, "vmdk")
-// 	if err != nil {
-// 		return newTemplate, err
-// 	}
-
-// 	templateUpdateUrl := t.GetLink("templatePath").Href
-
-// 	params := map[string]string{
-// 		"diskInfo": string(diskdef_json),
-// 	}
-// 	_, err = config.newfileUploadRequest(templateUpdateUrl, params, "diskFile", file)
-// 	if err != nil {
-// 		log.Printf("ERROR uploading file!", err)
-// 		return newTemplate, err
-// 	}
-
-// 	rclient := resty.R().SetBasicAuth(config.ApiUsername, config.ApiPassword)
-// 	respt, err := rclient.
-// 		SetHeader("Accept", t.GetLink("edit").Type).
-// 		Get(t.GetLink("edit").Href)
-// 	if err != nil {
-// 		return newTemplate, err
-// 	}
-
-// 	json.Unmarshal(respt.Body(), &newTemplate)
-// 	return newTemplate, err
-// }
-
-// func (t *VirtualMachineTemplate) Update(config Config) error {
-// 	template_json, err := t.ToJson()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	log.Printf("Template json is : %s", string(template_json))
-
-// 	templateUrl := t.GetLink("edit").Href
-// 	templateType := t.GetLink("edit").Type
-
-// 	if os.Getenv("RESTYDEBUG") != "" {
-// 		// Enable debug mode
-// 		resty.SetDebug(true)
-
-// 		// Using you custom log writer
-// 		logFile, _ := os.OpenFile("/tmp/go-resty.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-// 		resty.SetLogger(logFile)
-// 	}
-
-// 	resty.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-// 	resp, err := resty.R().
-// 		SetBasicAuth(config.ApiUsername, config.ApiPassword).
-// 		SetHeader("Accept", templateType).
-// 		SetHeader("Content-Type", templateType).
-// 		SetBody(string(template_json)).
-// 		Put(templateUrl)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	json.Unmarshal(resp.Body(), &t)
-// 	return nil
-// }
 
 type Config struct {
 	common.PackerConfig `mapstructure:",squash"`
