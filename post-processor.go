@@ -292,6 +292,10 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 		templatedef.DiskFileFormat = abqdiskformat
 		templatedef.RequiredHDInMB = strconv.Itoa(size)
 		templateUploaded, err := templatedef.Upload(abq, repo, file)
+		if err != nil {
+			newArtifact := &Artifact{Url: ""}
+			return newArtifact, p.config.KeepInputArtifact, err
+		}
 		log.Printf("Uploaded template : %v", templateUploaded)
 		exists, template, err = p.CheckTemplateExists(repo)
 		if exists {
@@ -315,7 +319,7 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 
 	template_link, _ := template.GetLink("edit")
 	newArtifact := &Artifact{Url: template_link.Href}
-	return newArtifact, false, nil
+	return newArtifact, p.config.KeepInputArtifact, nil
 }
 
 func (p *PostProcessor) FindRepoUrl() (abiquo_api.Repo, error) {

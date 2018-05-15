@@ -5,9 +5,9 @@ type OsType struct {
 	Version string
 }
 
-func OsTypeFromGuest(os_type string) OsType {
+func OsTypeFromGuest(osType string) OsType {
 	var os OsType
-	switch os_type {
+	switch osType {
 	// version 6.5
 	case "centos6-64":
 		os = OsType{Os: "CENTOS_64", Version: "6"}
