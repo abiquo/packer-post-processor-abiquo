@@ -27,7 +27,7 @@ The plugin provides a new postprocessor named `abiquo` with the following availa
 | `access_token`                | Abiquo OAuth 1.0a access token |
 | `access_token_secret`         | Abiquo OAuth 1.0a access token secret |
 | `datacenter`                  | The Abiquo datacenter name where to upload the template. Eg. `dclocation1` |
-| `keep_input_artifact`         | Wheter or not to keep the input artifact. Default is `false` |
+| `keep_input_artifact`         | Whether or not to keep the input artifact. Default is `false` |
 | `template_name`               | The name of the template to be created in Abiquo. Defaults to the packer VM name. |
 | `description`                 | Description of the template. Defaults to the same value as `name`. |
 | `category`                    | Category for the template. Defaults to `OS`. |
@@ -40,11 +40,18 @@ The plugin provides a new postprocessor named `abiquo` with the following availa
 | `eth_driver`                  | The NIC driver to use in the template. Defaults to `E1000`. |
 | `chef_enabled`                | Wether or not the template has the Abiquo Chef agent installed. Defaults to `false`. |
 | `icon_url`                    | The URL of the icon for the template. No URL will be set by default. |
-| `cpu_hotadd`                  | Wether or not the guest will support CPU hotplug. Defaults to `false`. |
-| `ram_hotadd`                  | Wether or not the guest will support RAM hotplug. Defaults to `false`. |
-| `disk_hotadd`                 | Wether or not the guest will support disks hotplug. Defaults to `false`. |
-| `nic_hotadd`                  | Wether or not the guest will support NIC hotplug. Defaults to `false`. |
-| `vnc_hotadd`                  | Wether or not the guest will support hot reconfigure of VNC remote access. Defaults to `false`. |
+| `cpu_hotadd`                  | Whether or not the guest will support CPU hotplug. Defaults to `false`. |
+| `ram_hotadd`                  | Whether or not the guest will support RAM hotplug. Defaults to `false`. |
+| `disk_hotadd`                 | Whether or not the guest will support disks hotplug. Defaults to `false`. |
+| `nic_hotadd`                  | Whether or not the guest will support NIC hotplug. Defaults to `false`. |
+| `vnc_hotadd`                  | Whether or not the guest will support hot reconfigure of VNC remote access. Defaults to `false`. |
+| `cpu_min`                     | Minimum vCPU that can be configured for this template. Defaults to nil. |
+| `cpu_max`                     | Maximum vCPU that can be configured for this template. Defaults to nil. |
+| `ram_min`                     | Minimum RAM that can be configured for this template. Defaults to nil. |
+| `ram_max`                     | Maximum RAM that can be configured for this template. Defaults to nil. |
+| `guest_setup`                 | Type of guest setup protocol available in the template, either `HYPERVISOR_TOOLS` or `CLOUD_INIT`. Defaults to nil. |
+| `enable_hp_recommended`       | Whether or not to force only recommended HP for this template. Defaults to nil. |
+| `guest_initial_password`      | Whether or not to generate a random initial password for the admin user on deploy. Defaults to nil (not doing it) |
 
 ## Example
 

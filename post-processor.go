@@ -126,6 +126,13 @@ type Config struct {
 	EnableDisksHotReconfigure        bool   `mapstructure:"disk_hotadd"`
 	EnableNicsHotReconfigure         bool   `mapstructure:"nic_hotadd"`
 	EnableRemoteAccessHotReconfigure bool   `mapstructure:"vnc_hotadd"`
+	CpuMin                           int    `mapstructure:"cpu_min"`
+	CpuMax                           int    `mapstructure:"cpu_max"`
+	RamMin                           int    `mapstructure:"ram_min"`
+	RamMax                           int    `mapstructure:"ram_max"`
+	GuestSetup                       string `mapstructure:"guest_setup"`
+	EnableOnlyHPRecommended          bool   `mapstructure:"enable_hp_recommended"`
+	GenerateGuestInitialPassword     bool   `mapstructure:"guest_initial_password"`
 
 	SshUser     string
 	SshPass     string
@@ -306,7 +313,6 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	}
 
 	ui.Say("Updating template with extra attributes...")
-
 	template.ChefEnabled = p.config.ChefEnabled
 	template.Description = p.config.Description
 	template.IconUrl = p.config.IconUrl
@@ -315,7 +321,20 @@ func (p *PostProcessor) PostProcess(ui packer.Ui, artifact packer.Artifact) (pac
 	template.EnableDisksHotReconfigure = p.config.EnableDisksHotReconfigure
 	template.EnableNicsHotReconfigure = p.config.EnableNicsHotReconfigure
 	template.EnableRemoteAccessHotReconfigure = p.config.EnableRemoteAccessHotReconfigure
-	template.Update(abq)
+	template.CpuMin = p.config.CpuMin
+	template.CpuMax = p.config.CpuMax
+	template.RamMin = p.config.RamMin
+	template.RamMax = p.config.RamMax
+	template.GuestSetup = p.config.GuestSetup
+	template.EnableOnlyHPRecommended = p.config.EnableOnlyHPRecommended
+	template.GenerateGuestInitialPassword = p.config.GenerateGuestInitialPassword
+
+	err = template.Update(abq)
+	if err = template.Update(abq); err != nil {
+		newArtifact := &Artifact{Url: ""}
+		return newArtifact, p.config.KeepInputArtifact, err
+	}
+	ui.Say("Template updated.")
 
 	template_link, _ := template.GetLink("edit")
 	newArtifact := &Artifact{Url: template_link.Href}
